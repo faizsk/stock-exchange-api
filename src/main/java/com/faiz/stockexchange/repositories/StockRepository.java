@@ -11,6 +11,4 @@ public interface StockRepository extends MongoRepository<Stock, String> {
   //@Query(value = "{ 'stockCode' : ?0 }")
   Stock findOneByStockCode(String stockCode);
 
-
-
 }

@@ -52,13 +52,13 @@ public class StockController {
   @ApiOperation(value = "Get Stock by StockCode")
   @RequestMapping(method = RequestMethod.GET, value = "/stocks/{stockCode}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> getStock(@PathVariable("stockCode") String stockCode) {
-    Stock stock = stockService.getStockByStockCode(stockCode);
     //System.out.println(stock);
-    if (null == stock) {
+    if (!stockService.isStockCodeExists(stockCode)) {
       String stockCodeNotFound = messageByLocaleService.getMessage("stockcode.notexists");
       LOGGER.info(stockCodeNotFound);
       throw new CustomException(stockCodeNotFound, HttpStatus.NOT_FOUND);
     }
+    Stock stock = stockService.getStockByStockCode(stockCode);
     LOGGER.info("Getting Stock with stockCode {}", stockCode);
     return new ResponseEntity<>(stock, HttpStatus.OK);
   }
@@ -66,12 +66,12 @@ public class StockController {
   @ApiOperation(value = "Create a new Stock")
   @RequestMapping(method = RequestMethod.POST, value = "/stocks")
   public ResponseEntity<Object> createStock(@RequestBody @Valid Stock stock) {
-    if (null != stockService.getStockByStockCode(stock.getStockCode())) {
+    if (stockService.isStockCodeExists(stock.getStockCode())) {
       String stockCodeAlreadyExists = messageByLocaleService.getMessage("stockcode.exists");
       LOGGER.info(stockCodeAlreadyExists);
       throw new CustomException(stockCodeAlreadyExists, HttpStatus.CONFLICT);
     }
-    if (null != stockService.getStockByStockName(stock.getStockName())) {
+    if (stockService.isStockNameExists(stock.getStockName())) {
       String stockNameAlreadyExists = messageByLocaleService.getMessage("stockname.exists");
       LOGGER.info(stockNameAlreadyExists);
       throw new CustomException(stockNameAlreadyExists, HttpStatus.CONFLICT);
@@ -85,12 +85,12 @@ public class StockController {
   @RequestMapping(method = RequestMethod.PUT, value = "/stocks/{stockCode}")
   public ResponseEntity<Object> updateStock(@Valid @PathVariable("stockCode") String stockCode,
       @Valid @RequestBody Set<StockValue> stockValue) {
-    Stock currentStock = stockService.getStockByStockCode(stockCode);
-    if (null == currentStock) {
+    if (!stockService.isStockCodeExists(stockCode)) {
       String stockCodeNotFound = messageByLocaleService.getMessage("stockcode.notexists");
       LOGGER.info(stockCodeNotFound);
       throw new CustomException(stockCodeNotFound, HttpStatus.NOT_FOUND);
     }
+    Stock currentStock = stockService.getStockByStockCode(stockCode);
     currentStock.setStockValue(stockValue);
     stockService.updateStock(currentStock);
     LOGGER.info("Stock with stockCode {} updated successfully", stockCode);
@@ -101,14 +101,13 @@ public class StockController {
   @ApiOperation(value = "Delete a Stock")
   @RequestMapping(value = "/stocks/{stockCode}", method = RequestMethod.DELETE)
   public ResponseEntity<Object> deleteStock(@PathVariable("stockCode") String stockCode) {
-    Stock currentStock = stockService.getStockByStockCode(stockCode);
-    List<Index> currentIndex = indexService.getAllIndices();
-    if (null == currentStock) {
+    //Stock currentStock = stockService.getStockByStockCode(stockCode);
+    if (!stockService.isStockCodeExists(stockCode)) {
       String stockCodeNotFound = messageByLocaleService.getMessage("stockcode.notexists");
       LOGGER.info(stockCodeNotFound);
       throw new CustomException(stockCodeNotFound, HttpStatus.NOT_FOUND);
     }
-
+    List<Index> currentIndex = indexService.getAllIndices();
     currentIndex.forEach(index -> index.getStocks().forEach(indexStock -> {
       if (indexStock.getStockCode().equals(stockCode)) {
         String stockCodeInIndex = messageByLocaleService.getMessage("stock.present.index");
@@ -117,7 +116,10 @@ public class StockController {
       }
     }));
 
-    stockService.deleteStockByStockCode(stockCode);
+    if (!stockService.deleteStockByStockCode(stockCode)) {
+      String stockCodeInIndex = messageByLocaleService.getMessage("stockcode.notexists");
+      throw new CustomException(stockCodeInIndex, HttpStatus.BAD_REQUEST);
+    }
     String stockDeleted = messageByLocaleService.getMessage("stock.deleted");
     LOGGER.info("Stock deleted with stockCode {} successfully", stockCode);
     return new ResponseEntity<>(stockCode + " " + stockDeleted, HttpStatus.OK);

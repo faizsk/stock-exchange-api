@@ -11,15 +11,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 @Service
 public class IndexService {
-
-  Stock firstStock = null;
-  Stock currentStock;
-  Set<IndexValues> indexValuesList = new HashSet<>();
-  IndexValues indexValues;
 
   /* public List<Index> indices = new ArrayList<>(
        Arrays.asList(new Index("1001", "Sensex", new HashSet<>(
@@ -29,6 +27,12 @@ public class IndexService {
                    new IndexStock("c1", 0.3f))))));*/
   @Autowired
   StockService stockService;
+
+  @Autowired
+  IndexService indexService;
+
+  @Autowired
+  MongoTemplate mongoTemplate;
 
   private IndexRepository indexRepository;
 
@@ -49,46 +53,47 @@ public class IndexService {
     return indexRepository.findOneByIndexCode(indexCode.toLowerCase());
   }
 
-  public void calculateWeight(Index index) {
+  public void calculateWeight() {
     List<Stock> currentStock = stockService.getAllStocks();
     IndexValues indexValues;
+    for (Index index : indexService.getAllIndices()) {
+      if (null != index) {
 
-    if (null != index) {
+        Set<IndexValues> indexValuesList = new HashSet<>();
+        index.setIndexValues(null);
 
-      Set<IndexValues> indexValuesList = new HashSet<>();
-      index.setIndexValues(null);
+        if (null != index.getStocks()) {
+          for (IndexStock indexStock : index.getStocks()) {
+            for (Stock stock : currentStock) {
+              if (stock.getStockCode().equalsIgnoreCase(indexStock.getStockCode())) {
+                // System.out.println(stock.getStockCode());
+                //System.out.println(indexStock.getStockCode());
+                if (null == index.getIndexValues()) {
+                  //System.out.println(stock.getStockValue().size());
 
-      if (null != index.getStocks()) {
-        for (IndexStock indexStock : index.getStocks()) {
-          for (Stock stock : currentStock) {
-            if (stock.getStockCode().equalsIgnoreCase(indexStock.getStockCode())) {
-              // System.out.println(stock.getStockCode());
-              //System.out.println(indexStock.getStockCode());
-              if (null == index.getIndexValues()) {
-                System.out.println(stock.getStockValue().size());
-
-                for (StockValue stockValue : stock.getStockValue()) {
-                  indexValues = new IndexValues();
-                  //System.out.print(stockValue.getDateTime());
-                  //System.out.println(" " + stockValue.getStockPrice() * indexStock.getWeight());
-                  indexValues.setDateTime(stockValue.getDateTime());
-                  indexValues
-                      .setIndexValue((stockValue.getStockPrice() * indexStock.getWeight()) / index
-                          .getStocks().size());
-                  indexValuesList.add(indexValues);
-                  index.setIndexValues(indexValuesList);
-                  // System.out.println("NEXT STOCK VALUE");
-                }
-              } else {
-                for (StockValue stockValue : stock.getStockValue()) {
-                  //System.out.print(stockValue.getDateTime());
-                  // System.out.println(" " + stockValue.getStockPrice() * indexStock.getWeight());
-                  for (IndexValues sIndexValues : index.getIndexValues()) {
-                    if (sIndexValues.getDateTime().isEqual(stockValue.getDateTime())) {
-                      sIndexValues.setIndexValue(
-                          sIndexValues.getIndexValue() + ((stockValue.getStockPrice() * indexStock
-                              .getWeight()) / index
-                              .getStocks().size()));
+                  for (StockValue stockValue : stock.getStockValue()) {
+                    indexValues = new IndexValues();
+                    //System.out.print(stockValue.getDateTime());
+                    //System.out.println(" " + stockValue.getStockPrice() * indexStock.getWeight());
+                    indexValues.setDateTime(stockValue.getDateTime());
+                    indexValues
+                        .setIndexValue((stockValue.getStockPrice() * indexStock.getWeight()) / index
+                            .getStocks().size());
+                    indexValuesList.add(indexValues);
+                    index.setIndexValues(indexValuesList);
+                    // System.out.println("NEXT STOCK VALUE");
+                  }
+                } else {
+                  for (StockValue stockValue : stock.getStockValue()) {
+                    //System.out.print(stockValue.getDateTime());
+                    // System.out.println(" " + stockValue.getStockPrice() * indexStock.getWeight());
+                    for (IndexValues sIndexValues : index.getIndexValues()) {
+                      if (sIndexValues.getDateTime().isEqual(stockValue.getDateTime())) {
+                        sIndexValues.setIndexValue(
+                            sIndexValues.getIndexValue() + ((stockValue.getStockPrice() * indexStock
+                                .getWeight()) / index
+                                .getStocks().size()));
+                      }
                     }
                   }
                 }
@@ -96,10 +101,11 @@ public class IndexService {
             }
           }
         }
+        indexValuesList.removeAll(indexValuesList);
       }
-      indexValuesList.removeAll(indexValuesList);
+      indexRepository.save(index);
+
     }
-    indexRepository.save(index);
   }
 
   public void addIndex(Index index) {
@@ -111,19 +117,26 @@ public class IndexService {
 
   public void deleteIndexByIndexCode(String indexCode) {
     //getAllIndices().removeIf(t -> t.getIndexCode().equalsIgnoreCase(indexCode));
-    indexRepository.delete(indexCode);
+    //indexRepository.delete(indexCode);
+    Query deleteIndexQuery = new Query(Criteria.where("indexCode").is(indexCode));
+    mongoTemplate.remove(deleteIndexQuery, "Indices");
   }
 
   public void updateIndex(Index index) {
    /* int pos = getAllIndices().indexOf(index);
     getAllIndices().set(pos, index);*/
     //indexRepository.save(index);
-    calculateWeight(index);
+    indexRepository.save(index);
+    updateAllIndex();
     //newCalculateWeight(index);
   }
 
+  public void updateAllIndex() {
+    calculateWeight();
+  }
+
   private void newCalculateWeight(Index index) {
-    System.out.println(index.getStocks().stream().map(IndexStock::getStockCode));
+    //System.out.println(index.getStocks().stream().map(IndexStock::getStockCode));
 
   }
 
@@ -133,4 +146,15 @@ public class IndexService {
         .orElse(null);*/
     return indexRepository.findOneByIndexName(indexName);
   }
+
+  public boolean isIndexNameExists(String indexName) {
+    Query isIndexNameExistsQuery = new Query(Criteria.where("indexName").is(indexName));
+    return mongoTemplate.exists(isIndexNameExistsQuery, "Indices");
+  }
+
+  public boolean isIndexCodeExists(String indexCode) {
+    Query isStockCodeExistsQuery = new Query(Criteria.where("indexCode").is(indexCode));
+    return mongoTemplate.exists(isStockCodeExistsQuery, "Indices");
+  }
+
 }

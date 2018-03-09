@@ -49,7 +49,7 @@ public class IndexController {
       throw new CustomException(noIndexFound, HttpStatus.NOT_FOUND);
     }
     LOGGER.info("Got all indices");
-    System.out.println("getting all indices");
+    //System.out.println("getting all indices");
     return new ResponseEntity<>(currentIndex, HttpStatus.OK);
   }
 
@@ -73,12 +73,12 @@ public class IndexController {
       LOGGER.info("The index object passed is null");
       throw new CustomException("Index Object entered was null", HttpStatus.BAD_REQUEST);
     }*/
-    if (null != indexService.getIndexByIndexCode(index.getIndexCode())) {
+    if (indexService.isIndexCodeExists(index.getIndexCode())) {
       String indexCodeExists = messageByLocaleService.getMessage("indexcode.exists");
       LOGGER.info(indexCodeExists);
       throw new CustomException(indexCodeExists, HttpStatus.CONFLICT);
     }
-    if (null != indexService.getIndexByIndexName(index.getIndexName())) {
+    if (indexService.isIndexNameExists(index.getIndexName())) {
       String indexNameExists = messageByLocaleService.getMessage("indexname.exists");
       LOGGER.info(indexNameExists);
       throw new CustomException(indexNameExists, HttpStatus.CONFLICT);
@@ -92,23 +92,23 @@ public class IndexController {
   @RequestMapping(method = RequestMethod.PUT, value = "/index/{indexCode}")
   public ResponseEntity<Index> updateIndex(@PathVariable("indexCode") @Valid String indexCode,
       @RequestBody @Valid Set<IndexStock> indexStocks) throws CustomException {
-    Index currentIndex = indexService.getIndexByIndexCode(indexCode);
-    System.out.println("Yes");
-    if (null == currentIndex) {
+    //System.out.println("Yes");
+    if (!indexService.isIndexCodeExists(indexCode)) {
       String noIndexFound = messageByLocaleService.getMessage("indexcode.notexists");
       LOGGER.info(noIndexFound);
       throw new CustomException(noIndexFound, HttpStatus.NOT_FOUND);
     }
-    System.out.println("Yes");
+    //System.out.println("Yes");
+    Index currentIndex = indexService.getIndexByIndexCode(indexCode);
     indexStocks.forEach(indexStock -> {
-      if (null == stockService.getStockByStockCode(indexStock.getStockCode())) {
+      if (!stockService.isStockCodeExists(indexStock.getStockCode())) {
         String stockCodeNotFound = messageByLocaleService.getMessage("stockcode.notexists");
         LOGGER.info(stockCodeNotFound);
         throw new CustomException(indexStock.getStockCode() + " " + stockCodeNotFound,
             HttpStatus.NOT_FOUND);
       }
     });
-    System.out.println("Yes");
+    //System.out.println("Yes");
    /* currentIndex.getStocks()
         .forEach(indexStock -> {
           if (stockService.getStockByStockCode(indexStocks.getStockCode()).equals()) {
@@ -137,7 +137,7 @@ public class IndexController {
   @RequestMapping(method = RequestMethod.DELETE, value = "/index/{indexCode}")
   public ResponseEntity<Object> deleteIndexByIndexCode(@PathVariable String indexCode)
       throws CustomException {
-    if (null == indexService.getIndexByIndexCode(indexCode)) {
+    if (!indexService.isIndexCodeExists(indexCode)) {
       String noIndexFound = messageByLocaleService.getMessage("index.invalid.indexcode");
       LOGGER.info(noIndexFound);
       throw new CustomException(noIndexFound, HttpStatus.NOT_FOUND);
