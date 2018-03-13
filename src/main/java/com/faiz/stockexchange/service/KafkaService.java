@@ -1,20 +1,11 @@
 package com.faiz.stockexchange.service;
 
 import com.faiz.stockexchange.domain.Stock;
-import com.faiz.stockexchange.domain.StockSerializer;
-import java.util.Arrays;
-import java.util.Collection;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.Properties;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,86 +17,34 @@ public class KafkaService {
   @Autowired
   IndexService indexService;
 
-  @Value("${bootstrap.servers}")
-  private String bootstrapServer;
-
-  @Value("${topic.name}")
-  private String topicName;
-
-  @Value("${account.group.id}")
-  private String accountGroupId;
-
-  @Value("${auto.offset.reset}")
-  private String offsetReset;
-
-  @Value("${enable.auto.commit}")
-  private String autoCommit;
-
-  @Value("${account1.client.id}")
-  private String acc1ClientId;
-
-  @Async
-  public void consume() {
-
-    Properties props = new Properties();
-    //A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
-    props.put("bootstrap.servers", bootstrapServer);
-    //A unique string that identifies the consumer group this consumer belongs to
-    props.put("group.id", accountGroupId);
-    //Deserializer class for key that implements the Deserializer interface.
-    props.put("key.deserializer",
-        StringDeserializer.class.getName());
-    //Deserializer class for value that implements the Deserializer interface.
-    props.put("value.deserializer", StockSerializer.class.getCanonicalName());
-    //What to do when there is no initial offset in Kafka
-    props.put("auto.offset.reset", offsetReset);
-    //The maximum amount of data per-partition the server will return
-    //props.put("max.partition.fetch.bytes", 5242880);
-    //If true the consumer's offset will be periodically committed in the background.
-    props.put("enable.auto.commit", autoCommit);
-    props.put("client.id", acc1ClientId);
-    KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(props);
-
-    consumer.subscribe(Arrays.asList(topicName), new ConsumerRebalanceListenerImp());
-
-    boolean running = true;
-
+  public void addStock(Message message) {
+    List<Stock> stocks = null;
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.findAndRegisterModules();
     try {
-      while (running) {
-        //The time, in milliseconds, spent waiting in poll if data is not available. If 0, returns immediately with any records that are available now
-        ConsumerRecords<String, Object> records = consumer.poll(1000);
-        for (ConsumerRecord<String, Object> record : records) {
-          List<Stock> stocks = (List) record.value();
-          for (Stock stock : stocks) {
-            if (stockService.isStockNameExists(stock.getStockName())) {
-              stockService.updateStock(stock);
+      //return objectMapper.readValue(data, StockValue.class);
+      stocks = objectMapper
+          .readValue(message.getPayload().toString(), new TypeReference<List<Stock>>() {
+          });
+      saveStocks(stocks);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("problem with object deserialization ");
+    }
+  }
 
-            } else {
-              stockService.createStock(stock);
-            }
-            indexService.calculateWeight();
-          }
-        }
+  public void saveStocks(List<Stock> stocks) {
+    for (Stock stock : stocks) {
+      if (stockService.isStockNameExists(stock.getStockName())) {
+        stockService.updateStock(stock);
 
-        //Commit offsets returned on the last poll() for all the subscribed list of topics and partitions.
-        consumer.commitSync();
+      } else {
+        stockService.createStock(stock);
       }
-    } finally {
-      consumer.close();
+      indexService.calculateWeight();
     }
   }
-
-  private class ConsumerRebalanceListenerImp implements ConsumerRebalanceListener {
-
-    @Override
-    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-      System.out.println("partition revoked for  " + partitions);
-    }
-
-    @Override
-    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-      System.out.println("partition assigned for  " + partitions);
-    }
-  }
-
 }
+
+
+
