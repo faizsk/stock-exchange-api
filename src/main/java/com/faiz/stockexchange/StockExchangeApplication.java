@@ -58,7 +58,6 @@ public class StockExchangeApplication {
         }
       }
     }
-
     context.getBean(StockExchangeApplication.class).run(context, topics);
     context.close();
   }

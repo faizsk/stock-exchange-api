@@ -22,7 +22,6 @@ public class KafkaService {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.findAndRegisterModules();
     try {
-      //return objectMapper.readValue(data, StockValue.class);
       stocks = objectMapper
           .readValue(message.getPayload().toString(), new TypeReference<List<Stock>>() {
           });
@@ -37,7 +36,6 @@ public class KafkaService {
     for (Stock stock : stocks) {
       if (stockService.isStockNameExists(stock.getStockName())) {
         stockService.updateStock(stock);
-
       } else {
         stockService.createStock(stock);
       }

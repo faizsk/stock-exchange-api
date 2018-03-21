@@ -32,7 +32,6 @@ public class Stock {
   private Set<StockValue> stockValue;
 
   public Stock() {
-
   }
 
   public Stock(String stockCode, String stockName) {

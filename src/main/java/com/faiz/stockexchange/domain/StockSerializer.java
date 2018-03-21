@@ -32,7 +32,6 @@ public class StockSerializer implements Serializer, Deserializer {
 
   @Override
   public void configure(Map configs, boolean isKey) {
-
   }
 
   @Override
@@ -48,8 +47,6 @@ public class StockSerializer implements Serializer, Deserializer {
 
   @Override
   public void close() {
-
   }
-
 
 }

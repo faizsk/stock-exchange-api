@@ -49,7 +49,6 @@ public class IndexController {
       throw new CustomException(noIndexFound, HttpStatus.NOT_FOUND);
     }
     LOGGER.info("Got all indices");
-    //System.out.println("getting all indices");
     return new ResponseEntity<>(currentIndex, HttpStatus.OK);
   }
 
@@ -69,10 +68,6 @@ public class IndexController {
   @ApiOperation(value = "Create New Index")
   @RequestMapping(method = RequestMethod.POST, value = "/index")
   public ResponseEntity<Object> addIndex(@RequestBody @Valid Index index) {
-/*    if (index == null) {
-      LOGGER.info("The index object passed is null");
-      throw new CustomException("Index Object entered was null", HttpStatus.BAD_REQUEST);
-    }*/
     if (indexService.isIndexCodeExists(index.getIndexCode())) {
       String indexCodeExists = messageByLocaleService.getMessage("indexcode.exists");
       LOGGER.info(indexCodeExists);
@@ -92,13 +87,12 @@ public class IndexController {
   @RequestMapping(method = RequestMethod.PUT, value = "/index/{indexCode}")
   public ResponseEntity<Index> updateIndex(@PathVariable("indexCode") @Valid String indexCode,
       @RequestBody @Valid Set<IndexStock> indexStocks) throws CustomException {
-    //System.out.println("Yes");
     if (!indexService.isIndexCodeExists(indexCode)) {
       String noIndexFound = messageByLocaleService.getMessage("indexcode.notexists");
       LOGGER.info(noIndexFound);
       throw new CustomException(noIndexFound, HttpStatus.NOT_FOUND);
     }
-    //System.out.println("Yes");
+
     Index currentIndex = indexService.getIndexByIndexCode(indexCode);
     indexStocks.forEach(indexStock -> {
       if (!stockService.isStockCodeExists(indexStock.getStockCode())) {
@@ -108,15 +102,6 @@ public class IndexController {
             HttpStatus.NOT_FOUND);
       }
     });
-    //System.out.println("Yes");
-   /* currentIndex.getStocks()
-        .forEach(indexStock -> {
-          if (stockService.getStockByStockCode(indexStocks.getStockCode()).equals()) {
-            System.out.println("YES");
-            String stockCodeNotFound = messageByLocaleService.getMessage("stock.no.stockcode");
-            throw new CustomException(stockCodeNotFound, HttpStatus.NOT_FOUND);
-          }
-        });*/
     currentIndex.setStocks(indexStocks);
 
     double sum = 0;

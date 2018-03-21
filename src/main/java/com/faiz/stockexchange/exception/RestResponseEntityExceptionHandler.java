@@ -37,7 +37,6 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     for (FieldError error : ex.getBindingResult().getFieldErrors()) {
       ApiValidationError apiValidationError = new ApiValidationError();
-      // System.out.println(error);
       apiValidationError.setField(error.getField());
       apiValidationError.setMessage(error.getDefaultMessage());
       apiValidationError.setObject(error.getObjectName());
@@ -46,13 +45,9 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     }
 
     for (ObjectError error : ex.getBindingResult().getGlobalErrors()) {
-
       ApiValidationError apiValidationError = new ApiValidationError();
-
-      // apiValidationError.setField(error.getField());
       apiValidationError.setMessage(error.getDefaultMessage());
       apiValidationError.setObject(error.getObjectName());
-      // apiValidationError.setRejectedValue(error.getRejectedValue());
       errors.add(apiValidationError);
     }
 
@@ -60,7 +55,6 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
         new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage(), errors);
     apiError.setMessage("API Validation Failed");
     return buildResponseEntity(apiError);
-    // return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
   }
 
 }

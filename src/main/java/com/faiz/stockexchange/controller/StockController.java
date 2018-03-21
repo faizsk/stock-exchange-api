@@ -124,4 +124,30 @@ public class StockController {
     LOGGER.info("Stock deleted with stockCode {} successfully", stockCode);
     return new ResponseEntity<>(stockCode + " " + stockDeleted, HttpStatus.OK);
   }
+
+  @ApiOperation(value = "Delete a StockValue")
+  @RequestMapping(value = "/stocks/{stockCode}/{stockValueIndex}", method = RequestMethod.DELETE)
+  public ResponseEntity<Object> deleteStockValue(@PathVariable("stockCode") String stockCode,
+      @PathVariable("stockValueIndex") String stockValueIndex) {
+
+    stockService.deleteStockValue(stockCode, stockValueIndex);
+    String stockDeleted = messageByLocaleService.getMessage("stock.deleted");
+    LOGGER.info("Stock deleted with stockCode {} successfully", stockCode);
+    return new ResponseEntity<>(stockCode + " " + stockDeleted, HttpStatus.OK);
+  }
+
+  @ApiOperation(value = "Update a StockValue")
+  @RequestMapping(value = "/stocks/{stockCode}/{stockValueIndex}", method = RequestMethod.PUT)
+  public ResponseEntity<Object> updateStockValue(@PathVariable("stockCode") String stockCode,
+      @PathVariable("stockValueIndex") String stockValueIndex,
+      @Valid @RequestBody StockValue stockValue) {
+
+    stockService.deleteStockValue(stockCode, stockValueIndex);
+    stockService.updateStockValue(stockCode, stockValueIndex, stockValue);
+    System.out.println("StockValue with stockCode {} successfully Updated." + stockValue);
+    String stockDeleted = "Updated";
+    LOGGER.info("StockValue with stockCode {} successfully Updated.", stockCode);
+    return new ResponseEntity<>(stockCode + " " + stockDeleted, HttpStatus.OK);
+  }
+
 }

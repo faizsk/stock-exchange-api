@@ -29,5 +29,4 @@ public class IndexStock {
     this.weight = weight;
   }
 
-
 }

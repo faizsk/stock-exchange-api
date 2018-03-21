@@ -1,16 +1,6 @@
 package com.faiz.stockexchange.config;
 
 
-import com.faiz.stockexchange.exception.MessageByLocaleService;
-import com.faiz.stockexchange.repositories.IndexRepository;
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.config.AbstractMongoConfiguration;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
-
 /*
 @EnableMongoRepositories(basePackageClasses = IndexRepository.class)
 @Configuration
